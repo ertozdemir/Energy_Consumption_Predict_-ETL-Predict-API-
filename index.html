@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enerji Tüketimi Tahmin Sistemi</title>
+    <!-- Stil stilleri için basit bir CSS ekliyoruz -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            /* Padding'in genişliğe dahil olması için */
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #28a745;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Enerji Tüketim Hesapla</h2>
+        <!-- Kullanıcıdan veri alacağımız form -->
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="building_type">Bina Tipi:</label>
+                <select id="building_type" name="building_type" required>
+                    <option value="Residential">Mesken (Residential)</option>
+                    <option value="Commercial">Ticari (Commercial)</option>
+                    <option value="Industrial">Endüstriyel (Industrial)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="square_meters">Metrekare (m²):</label>
+                <input type="number" id="square_meters" name="square_meters" step="0.1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="number_occupants">Kişi Sayısı:</label>
+                <input type="number" id="number_occupants" name="number_occupants" required>
+            </div>
+
+            <div class="form-group">
+                <label for="appliances_used">Cihaz Sayısı:</label>
+                <input type="number" id="appliances_used" name="appliances_used" required>
+            </div>
+
+            <div class="form-group">
+                <label for="day_of_week">Haftanın Günü:</label>
+                <select id="day_of_week" name="day_of_week" required>
+                    <option value="Monday">Pazartesi</option>
+                    <option value="Tuesday">Salı</option>
+                    <option value="Wednesday">Çarşamba</option>
+                    <option value="Thursday">Perşembe</option>
+                    <option value="Friday">Cuma</option>
+                    <option value="Saturday">Cumartesi</option>
+                    <option value="Sunday">Pazar</option>
+                </select>
+            </div>
+
+            <button type="submit">Hesapla</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Form gönderildiğinde sayfa yenilenmesini engelleyip JavaScript ile işlemi yönetiyoruz
+        document.getElementById('predictionForm').addEventListener('submit', async function (e) {
+            e.preventDefault(); // Sayfa yenilenmesini engelle
+
+            // Form verilerini alıyoruz
+            const formData = new FormData(e.target);
+
+            // Verileri JSON formatına çeviriyoruz (API'miz JSON bekliyor)
+            const data = {
+                building_type: formData.get('building_type'),
+                square_meters: parseFloat(formData.get('square_meters')),
+                number_occupants: parseInt(formData.get('number_occupants')),
+                appliances_used: parseInt(formData.get('appliances_used')),
+                day_of_week: formData.get('day_of_week')
+            };
+
+            try {
+                // API'ye POST isteği gönderiyoruz
+                // Not: API ile HTML aynı sunucuda çalışacağı için '/predict' göreceli yolunu kullanabiliriz
+                // Eğer farklı sunucudaysa 'http://localhost:8000/predict' yazılmalı
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const consumptionWatts = result.predicted_energy_consumption;
+                    const dailyKwh = (consumptionWatts * 24) / 1000;
+
+                    // Sonucu ekrana yazdırıyoruz (Watt ve Günlük kWh cinsinden)
+                    document.getElementById('result').innerHTML = `
+                    Anlık Güç Tüketimi (Tahmini): <span style="color:#007bff">${consumptionWatts.toFixed(0)} W</span><br>
+                    <span style="font-size: 0.8em; color: #555;">Tahmini Günlük Tüketim: <b>${dailyKwh.toFixed(2)} kWh</b></span>
+                `;
+                } else {
+                    document.getElementById('result').innerText = "Hata oluştu: " + response.statusText;
+                    document.getElementById('result').style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                document.getElementById('result').innerText = "Sunucuya bağlanılamadı!";
+                document.getElementById('result').style.color = 'red';
+            }
+        });
+    </script>
+
+</body>
+
+</html>
