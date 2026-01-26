@@ -29,7 +29,9 @@ else:
 # 3. Veritabanı Fonksiyonları
 # Kullanıcıdan gelen her isteği ve sonucu kaydetmek için
 def init_db():
-    conn = sqlite3.connect(os.path.join(BASE_DIR, 'database', 'energy_consumption.db'))
+    db_folder = os.path.join(BASE_DIR, 'database')
+    os.makedirs(db_folder, exist_ok=True)
+    conn = sqlite3.connect(os.path.join(db_folder, 'energy_consumption.db'))
     c = conn.cursor()
     # 'user' tablosu yoksa oluşturuyoruz
     c.execute('''CREATE TABLE IF NOT EXISTS user 

@@ -33,8 +33,14 @@ def preprocess_data(df):
 
 def write_db(df):
 
-    db_path = os.path.join(BASE_DIR, 'database', 'energy_consumption.db')
-    engine = create_engine(f'sqlite:///{db_path}')
+    db_folder = os.path.join(BASE_DIR, 'database')
+    os.makedirs(db_folder, exist_ok=True)
+    db_path = os.path.join(db_folder, 'energy_consumption.db')
+    
+    # SQLAlchemy on Windows works best with forward slashes or r prefix, 
+    # but replacing separators is a safe cross-platform bet for URLs
+    db_path_str = db_path.replace('\\', '/')
+    engine = create_engine(f'sqlite:///{db_path_str}')
     base = declarative_base()
     
     class EnergyData(base):
