@@ -17,6 +17,7 @@ app = FastAPI(title="Enerji Tüketim Tahmin API")
 # ancak basitlik adına FileResponse kullanacağız.
 
 # 2. Model dosyasının yolunu belirliyoruz ve yüklüyoruz
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "xgboost.pkl")
 
 if os.path.exists(MODEL_PATH):
